@@ -388,18 +388,32 @@
             },
             gitgraph: {
                 theme: 'base'
-            }
+            },
+            securityLevel: 'loose'
         });
 
-        // Configure marked
-        marked.setOptions({
-            highlight: function(code, lang) {
-                if (Prism.languages[lang]) {
-                    return Prism.highlight(code, Prism.languages[lang], lang);
+        console.log('Mermaid initialized');
+
+        // Configure marked with custom renderer for mermaid
+        const renderer = new marked.Renderer();
+        
+        // Custom renderer for code blocks to handle mermaid
+        renderer.code = function(code, language) {
+            if (language === 'mermaid') {
+                return `<div class="mermaid">${code}</div>`;
+            } else {
+                // Default code block rendering with syntax highlighting
+                if (language && Prism.languages[language]) {
+                    const highlighted = Prism.highlight(code, Prism.languages[language], language);
+                    return `<pre><code class="language-${language}">${highlighted}</code></pre>`;
                 } else {
-                    return code;
+                    return `<pre><code>${code}</code></pre>`;
                 }
-            },
+            }
+        };
+
+        marked.setOptions({
+            renderer: renderer,
             breaks: true,
             gfm: true
         });
@@ -422,7 +436,13 @@
                 // Process mermaid diagrams
                 const mermaidElements = document.querySelectorAll('.mermaid');
                 if (mermaidElements.length > 0) {
-                    await mermaid.run();
+                    console.log(`Found ${mermaidElements.length} mermaid diagrams to render`);
+                    try {
+                        await mermaid.run();
+                        console.log('Mermaid diagrams rendered successfully');
+                    } catch (error) {
+                        console.error('Error rendering mermaid diagrams:', error);
+                    }
                 }
 
                 // Re-run Prism highlighting
